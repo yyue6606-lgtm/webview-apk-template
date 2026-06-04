@@ -723,6 +723,8 @@ document.getElementById('exTime').value = new Date().toTimeString().slice(0,5);
 renderLogTab();
 updateSyncStatus();
 gistPull();
+loadFromNativeFile();
+updateDataPathDisplay();
 window.addEventListener('beforeunload', saveDayData);
 
 // PWA service worker
@@ -799,6 +801,15 @@ function setupGist(){
   saveGistConfig(cfg);
   updateSyncStatus();
   alert('✅ 设置完成！现在可以点击「☁️ 云同步」上传数据。');
+}
+
+function updateDataPathDisplay(){
+  var path = getNativeDataPath();
+  if(path){
+    var div = document.getElementById('syncStatus');
+    var current = div.innerHTML;
+    div.innerHTML = '📁 数据文件：<b>' + path + '</b><br>' + current;
+  }
 }
 
 function updateSyncStatus(){
@@ -968,7 +979,38 @@ var _origSaveData = sv;
 sv = function(d){
   _origSaveData(d);
   autoSaveToFile();
+  // Also save to native file if running in APK
+  if(window.Android && window.Android.saveData){
+    window.Android.saveData(JSON.stringify(d));
+  }
 };
+
+// Native file load (APK) and path display
+function loadFromNativeFile(){
+  if(window.Android && window.Android.loadData){
+    var json = window.Android.loadData();
+    if(json){
+      try{
+        var data = JSON.parse(json);
+        var current = ld();
+        // Merge: native file data takes priority
+        for(var k in data){ current[k] = data[k]; }
+        sv(current);
+        renderLogTab();
+        renderAnalysisTab();
+        return true;
+      }catch(e){}
+    }
+  }
+  return false;
+}
+
+function getNativeDataPath(){
+  if(window.Android && window.Android.getDataPath){
+    return window.Android.getDataPath();
+  }
+  return null;
+}
 </script>
 </body>
 </html>

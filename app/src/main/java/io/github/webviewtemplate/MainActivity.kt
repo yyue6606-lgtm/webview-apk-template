@@ -1,4 +1,8 @@
 package io.github.webviewtemplate
+import android.os.Environment
+import android.webkit.JavascriptInterface
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -267,6 +271,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Register native file interface for data persistence
+        webView.addJavascriptInterface(FileInterface(this), "Android")
+
         webView.loadUrl(HOME_URL)
 
         onBackPressedDispatcher.addCallback(
@@ -407,6 +414,43 @@ class MainActivity : AppCompatActivity() {
             Color.argb((alpha.coerceIn(0f, 1f) * 255).toInt(), r, g, b)
         }
     }
+
+    // JavaScript interface for file save/load
+    class FileInterface(private val activity: MainActivity) {
+        private val dataDir: File
+            get() {
+                val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "悦健康")
+                if (!dir.exists()) dir.mkdirs()
+                return dir
+            }
+
+        @JavascriptInterface
+        fun saveData(json: String): String {
+            return try {
+                val file = File(dataDir, "glucose-data.json")
+                file.writeText(json)
+                "OK:${file.absolutePath}"
+            } catch (e: Exception) {
+                "ERROR:${e.message}"
+            }
+        }
+
+        @JavascriptInterface
+        fun loadData(): String {
+            return try {
+                val file = File(dataDir, "glucose-data.json")
+                if (file.exists()) file.readText() else ""
+            } catch (e: Exception) {
+                ""
+            }
+        }
+
+        @JavascriptInterface
+        fun getDataPath(): String {
+            return File(dataDir, "glucose-data.json").absolutePath
+        }
+    }
+
 
     companion object {
         private const val TAG = "WebViewTemplate"
