@@ -158,11 +158,12 @@
       <button class="btn btn-sm btn-outline" onclick="exportData()" style="flex:1;min-width:80px;">📤 导出</button>
       <button class="btn btn-sm btn-outline" onclick="document.getElementById('importFile').click()" style="flex:1;min-width:80px;">📥 导入</button>
       <button class="btn btn-sm btn-outline" id="gistSyncBtn" onclick="gistSync()" style="flex:1;min-width:80px;">☁️ Gist</button>
+      <button class="btn btn-sm btn-outline" onclick="nativeExport()" style="flex:1;min-width:80px;">📁 路径</button>
       <input type="file" id="importFile" accept=".json" onchange="importData(this)" style="display:none;">
     </div>
     <p style="font-size:0.7em;color:var(--muted);">
-      <b>💾 自动保存</b>：选一个文件（建议放 OneDrive/Dropbox/iCloud 文件夹），之后每次记录自动写入，云盘实时同步。<br>
-      <b>📤/📥</b>：手动备份恢复。 <b>☁️ Gist</b>：换浏览器自动恢复。</p>
+      <b>📁 路径</b>：查看数据保存位置，方便备份。<br>
+      <b>💾 自动保存</b>：Chrome桌面版可用。<b>📤/📥</b>：手动备份恢复。 <b>☁️ Gist</b>：换浏览器自动恢复。</p>
   </div>
   <div class="card"><h3>🍎 我的水果/零食：基于真实血糖</h3><div id="mySnacks"></div></div>
   <div class="card"><h3>🏃 我的运动：基于真实血糖</h3><div id="myExercises"></div></div>
@@ -723,8 +724,13 @@ document.getElementById('exTime').value = new Date().toTimeString().slice(0,5);
 renderLogTab();
 updateSyncStatus();
 gistPull();
-loadFromNativeFile();
-updateDataPathDisplay();
+// Delay native file operations to ensure WebView JS bridge is ready
+setTimeout(function(){
+  if(detectAPK()){
+    loadFromNativeFile();
+    updateDataPathDisplay();
+  }
+}, 500);
 window.addEventListener('beforeunload', saveDayData);
 
 // PWA service worker
@@ -974,34 +980,40 @@ async function autoSaveToFile(){
   }
 }
 
-// Override saveData to also auto-save to file
+// Override saveData — APK uses native file as PRIMARY storage
+var _isAPK = false;
 var _origSaveData = sv;
 sv = function(d){
   _origSaveData(d);
   autoSaveToFile();
-  // Also save to native file if running in APK
-  if(window.Android && window.Android.saveData){
+  if(_isAPK && window.Android && window.Android.saveData){
     window.Android.saveData(JSON.stringify(d));
   }
 };
 
-// Native file load (APK) and path display
-function loadFromNativeFile(){
-  if(window.Android && window.Android.loadData){
-    var json = window.Android.loadData();
-    if(json){
-      try{
-        var data = JSON.parse(json);
-        var current = ld();
-        // Merge: native file data takes priority
-        for(var k in data){ current[k] = data[k]; }
-        sv(current);
-        renderLogTab();
-        renderAnalysisTab();
-        return true;
-      }catch(e){}
-    }
+// Detect if running in APK
+function detectAPK(){
+  if(window.Android && window.Android.getDataPath){
+    _isAPK = true;
+    return true;
   }
+  return false;
+}
+
+// Native file load — replaces localStorage when in APK
+function loadFromNativeFile(){
+  if(!window.Android || !window.Android.loadData) return false;
+  var json = window.Android.loadData();
+  if(!json || json.length < 10) return false;
+  try{
+    var data = JSON.parse(json);
+    if(Object.keys(data).length > 0){
+      sv(data); // replace localStorage entirely
+      renderLogTab();
+      renderAnalysisTab();
+      return true;
+    }
+  }catch(e){}
   return false;
 }
 
@@ -1010,6 +1022,17 @@ function getNativeDataPath(){
     return window.Android.getDataPath();
   }
   return null;
+}
+
+function nativeExport(){
+  var path = getNativeDataPath();
+  if(path){
+    alert('数据保存在：\n' + path + '\n\n用文件管理器打开此路径即可看到 glucose-data.json\n复制到电脑/云端即可备份');
+  } else if(_isAPK){
+    alert('数据保存在：\n内部存储/Documents/悦健康/glucose-data.json');
+  } else {
+    alert('当前在浏览器中，数据保存在浏览器存储中。\n请使用导出功能备份数据。');
+  }
 }
 </script>
 </body>
