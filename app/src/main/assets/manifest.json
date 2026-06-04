@@ -1,0 +1,14 @@
+{
+  "name": "悦健康",
+  "short_name": "悦健康",
+  "description": "悦控糖悦美腻 - 三餐记录 · 营养评估 · AI食物查询 · 血糖追踪",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f5f2",
+  "theme_color": "#e88b9e",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

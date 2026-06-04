@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="血糖监测">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#c97d6e">
+<link rel="manifest" href="manifest.json">
+<title>🩸 悦控糖悦美腻</title>
+<style>
+  :root { --bg:#f7f5f2; --card:#fff; --text:#3d3d3d; --muted:#9b8e8a; --primary:#c97d6e; --primary-dark:#a8685b; --danger:#d49589; --warn:#c9a04e; --safe:#5a9e6f; --info:#6b8e9e; --border:#e8e3df; --radius:12px; --shadow:0 2px 12px rgba(0,0,0,0.05); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); line-height:1.6; padding-bottom:80px; }
+  .container { max-width:620px; margin:0 auto; padding:16px; }
+  .header { background:linear-gradient(135deg,#c97d6e,#b07668); color:#fff; padding:22px; text-align:center; border-radius:var(--radius); margin-bottom:16px; }
+  .header h1 { font-size:1.3em; font-weight:700; } .header .subtitle { opacity:0.88; font-size:0.8em; margin-top:4px; }
+  .header h1 .app-icon { display:inline-block; font-size:1.3em; margin-right:6px; vertical-align:middle; }
+  .tabs { display:flex; gap:4px; margin-bottom:16px; background:var(--card); border-radius:var(--radius); padding:4px; box-shadow:var(--shadow); }
+  .tab { flex:1; text-align:center; padding:10px 4px; border-radius:10px; font-size:0.82em; font-weight:600; cursor:pointer; border:none; background:transparent; color:var(--muted); transition:all 0.2s; }
+  .tab.active { background:var(--primary); color:#fff; }
+  .card { background:var(--card); border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:var(--shadow); }
+  .card h3 { font-size:1em; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--border); display:flex; align-items:center; gap:6px; }
+  .form-row { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .form-row label { font-size:0.76em; color:var(--muted); display:block; margin-bottom:2px; }
+  .form-row input,.form-row select,.form-row textarea { flex:1; min-width:65px; padding:9px 10px; border:1px solid var(--border); border-radius:8px; font-size:0.9em; background:#fafaf8; }
+  .form-row textarea { min-width:180px; resize:vertical; }
+  .form-group { margin-bottom:10px; }
+  .form-group label { font-size:0.76em; color:var(--muted); display:block; margin-bottom:2px; }
+  .form-group input,.form-group select,.form-group textarea { width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; font-size:0.9em; background:#fafaf8; }
+  .btn { padding:10px 20px; border-radius:8px; font-size:0.9em; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; }
+  .btn-primary { background:var(--primary); color:#fff; width:100%; }
+  .btn-secondary { background:var(--info); color:#fff; width:100%; }
+  .btn-sm { padding:6px 14px; font-size:0.78em; border-radius:6px; }
+  .btn-outline { background:#fff; color:var(--primary); border:1.5px solid var(--primary); }
+  .btn:active { transform:scale(0.97); }
+  .log-entry { background:var(--card); border-radius:var(--radius); padding:14px; margin-bottom:10px; box-shadow:var(--shadow); border-left:4px solid var(--border); position:relative; }
+  .log-entry.spike { border-left-color:var(--danger); background:#fef9f8; }
+  .log-entry.safe { border-left-color:var(--safe); }
+  .log-entry .entry-title { font-weight:700; font-size:0.95em; }
+  .log-entry .entry-detail { font-size:0.82em; margin-top:4px; color:#5d5d5d; }
+  .log-entry .delta { font-size:1.15em; font-weight:800; }
+  .log-entry .delta.spike { color:var(--danger); } .log-entry .delta.safe { color:var(--safe); }
+  .log-entry .del-btn { position:absolute; top:10px; right:10px; background:none; border:none; color:var(--muted); font-size:1.2em; cursor:pointer; padding:2px 8px; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.7em; font-weight:700; margin-left:4px; }
+  .badge-danger { background:#fce8e4; color:var(--primary-dark); } .badge-safe { background:#e4f0e8; color:var(--safe); } .badge-warn { background:#fdf3e0; color:var(--warn); } .badge-info { background:#e4eef3; color:var(--info); }
+  .eval-card { margin-top:8px; padding:12px 14px; border-radius:8px; font-size:0.8em; line-height:1.7; }
+  .eval-card.good { background:#edf5ef; border:1px solid #b8d8c0; } .eval-card.warn { background:#fef9f0; border:1px solid #e8d5a8; } .eval-card.bad { background:#fef6f4; border:1px solid #e8c4bc; }
+  .eval-card .eval-score { font-size:1.1em; font-weight:800; }
+  .eval-card .eval-item { margin:2px 0; } .eval-card .eval-item.good::before { content:'✅ '; } .eval-card .eval-item.warn::before { content:'⚠️ '; } .eval-card .eval-item.bad::before { content:'❌ '; }
+  .eval-card .eval-suggest { margin-top:8px; padding-top:8px; border-top:1px dashed #ddd; }
+  .eval-card .eval-alt { color:var(--safe); font-weight:600; }
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .stat-card { background:#faf9f7; border-radius:10px; padding:12px; text-align:center; }
+  .stat-card .value { font-size:1.5em; font-weight:800; } .stat-card .label { font-size:0.7em; color:var(--muted); margin-top:2px; }
+  .stat-card .value.danger { color:var(--danger); } .stat-card .value.safe { color:var(--safe); } .stat-card .value.warn { color:var(--warn); }
+  table { width:100%; border-collapse:collapse; font-size:0.82em; }
+  th,td { padding:8px 6px; text-align:center; border-bottom:1px solid var(--border); }
+  th { background:#faf9f7; font-weight:700; font-size:0.75em; color:var(--muted); }
+  .tag-red { background:#fce8e4; color:var(--primary-dark); padding:2px 8px; border-radius:20px; font-weight:700; font-size:0.78em; }
+  .tag-orange { background:#fef3e0; color:var(--warn); padding:2px 8px; border-radius:20px; font-weight:700; font-size:0.78em; }
+  .tag-green { background:#e4f0e8; color:var(--safe); padding:2px 8px; border-radius:20px; font-weight:700; font-size:0.78em; }
+  .date-nav { display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:12px; }
+  .date-nav .date { font-weight:700; font-size:1.05em; }
+  .date-nav button { background:none; border:1px solid var(--border); border-radius:50%; width:32px; height:32px; font-size:1.2em; cursor:pointer; color:var(--text); }
+  .empty { text-align:center; padding:30px; color:var(--muted); } .empty .big { font-size:2.5em; margin-bottom:8px; }
+
+  /* AI search panel */
+  .ai-panel { background:linear-gradient(135deg,#f0f4f8,#e8eef5); border:1px solid #c8d8e8; border-radius:10px; padding:12px; margin-top:8px; }
+  .ai-panel .ai-title { font-weight:700; font-size:0.85em; color:var(--info); margin-bottom:6px; }
+  .ai-panel .ai-result { font-size:0.8em; line-height:1.6; max-height:200px; overflow-y:auto; background:#fff; border-radius:6px; padding:8px; margin-top:6px; display:none; }
+  .ai-panel .ai-loading { font-size:0.8em; color:var(--muted); display:none; }
+  .ai-panel .unrecognized { display:inline-block; background:#fff3e0; padding:3px 8px; border-radius:12px; margin:2px; font-size:0.8em; cursor:pointer; border:1px solid #ffcc80; }
+  .ai-panel .unrecognized:hover { background:#ffe0b2; }
+  .search-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+  .search-row input { flex:1; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:0.85em; }
+  @media print { .tabs,.btn,.del-btn,.date-nav button,.form-row,.ai-panel { display:none!important; } .card { break-inside:avoid; box-shadow:none; border:1px solid #ddd; } }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header"><h1><span class="app-icon">💖</span>悦控糖悦美腻</h1><div class="subtitle">三餐记录 · 营养评估 · 做自己的控糖主理人</div></div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('log')">📝 每日记录</button>
+  <button class="tab" onclick="switchTab('analysis')">📊 我的数据</button>
+  <button class="tab" onclick="switchTab('guide')">🎯 营养指南</button>
+</div>
+
+<!-- ================== TAB 1 ================== -->
+<div id="tab-log">
+  <div class="date-nav">
+    <button onclick="changeDate(-1)">◀</button><span class="date" id="currentDate">--</span><button onclick="changeDate(1)">▶</button>
+    <button onclick="goToday()" style="border-radius:8px;width:auto;padding:4px 10px;font-size:0.75em;">今天</button>
+  </div>
+  <div class="stat-grid" id="dayStats">
+    <div class="stat-card"><div class="value" id="statFasting">--</div><div class="label">空腹血糖 mmol/L</div></div>
+    <div class="stat-card"><div class="value" id="statSpikes">--</div><div class="label">今日炸糖次数</div></div>
+    <div class="stat-card"><div class="value" id="statScore">--</div><div class="label">三餐营养均分</div></div>
+    <div class="stat-card"><div class="value" id="statRange">--</div><div class="label">血糖波动幅度</div></div>
+  </div>
+  <div class="card">
+    <h3>🌅 空腹血糖</h3>
+    <div class="form-row"><input type="number" id="fastingGlucose" placeholder="mmol/L" step="0.1" style="width:120px;" onchange="saveDayData()"><span style="line-height:40px;font-size:0.8em;color:var(--muted);">起床空腹，未进食未运动</span></div>
+  </div>
+  <div class="card">
+    <h3>🍽️ 记录一餐</h3>
+    <div class="form-row"><select id="mealType" style="flex:0.8;"><option value="🥐 早餐">🥐 早餐</option><option value="🍚 午餐">🍚 午餐</option><option value="🌙 晚餐">🌙 晚餐</option></select><input type="time" id="mealTime" style="flex:0.9;"></div>
+    <div class="form-group"><label>这餐吃了什么？（每样食物用逗号分隔）</label><textarea id="mealFood" rows="2" placeholder="例如：抗性淀粉冲剂, 奇亚籽, 鸡蛋, 姜黄粉, 橄榄油, 肉桂粉"></textarea></div>
+    <div class="form-row">
+      <div style="flex:1;"><label>餐前血糖</label><input type="number" id="preMeal" placeholder="mmol/L" step="0.1"></div>
+      <div style="flex:1;"><label>餐后30min</label><input type="number" id="post30" placeholder="mmol/L" step="0.1"></div>
+      <div style="flex:1;"><label>餐后1h</label><input type="number" id="post60" placeholder="mmol/L" step="0.1"></div>
+      <div style="flex:1;"><label>餐后2h</label><input type="number" id="post120" placeholder="mmol/L" step="0.1"></div>
+    </div>
+    <div class="form-row">
+      <div style="flex:1;"><label>CGM峰值血糖</label><input type="number" id="peakGlucose" placeholder="可选，自动取最大值" step="0.1"></div>
+      <div style="flex:1;"><label>恢复到餐前水平用时(分钟)</label><input type="number" id="recoveryTime" placeholder="如：90" step="1"></div>
+    </div>
+    <button class="btn btn-primary" onclick="addMeal()">➕ 记录并评估这餐</button>
+    <div id="mealEvalPreview" style="margin-top:10px;"></div>
+    <!-- AI 查询面板 -->
+    <div class="ai-panel" id="aiPanel" style="margin-top:10px;">
+      <div class="ai-title">🔍 AI 食物查询（DeepSeek）</div>
+      <div class="search-row"><input type="text" id="aiSearchInput" placeholder="输入食物名，如：抗性淀粉"><button class="btn btn-sm btn-outline" onclick="aiSearchFood()">查询</button><button class="btn btn-sm btn-outline" onclick="aiAnalyzeMeal()" style="white-space:nowrap;">分析整餐</button></div>
+      <div class="ai-loading" id="aiLoading">⏳ 正在查询 DeepSeek...</div>
+      <div class="ai-result" id="aiResult"></div>
+      <div id="unrecognizedFoods" style="font-size:0.78em;margin-top:4px;"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>🍎 记录水果/零食等</h3>
+    <div class="form-row"><input type="text" id="snackName" placeholder="名称" style="flex:1.2;"><input type="text" id="snackAmount" placeholder="吃了多少" style="flex:0.8;"><select id="snackType" style="flex:0.8;"><option value="水果">水果</option><option value="零食">零食</option><option value="饮品">饮品</option><option value="加餐">加餐</option></select><input type="time" id="snackTime" style="flex:0.8;"></div>
+    <div class="form-row">
+      <div style="flex:1;"><label>吃之前血糖</label><input type="number" id="snackPre" placeholder="mmol/L" step="0.1"></div>
+      <div style="flex:1;"><label>吃之后峰值</label><input type="number" id="snackPeak" placeholder="mmol/L" step="0.1"></div>
+      <div style="flex:1;"><label>恢复用时(分钟)</label><input type="number" id="snackRecovery" placeholder="如：60" step="1"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="addSnack()">➕ 记录水果/零食</button>
+  </div>
+  <div class="card">
+    <h3>🏃 记录运动</h3>
+    <div class="form-row"><input type="text" id="exType" placeholder="运动类型" style="flex:1.2;"><input type="number" id="exDuration" placeholder="分钟" style="flex:0.6;"><input type="time" id="exTime" style="flex:0.8;"><select id="exIntensity" style="flex:0.7;"><option value="低">🟢低</option><option value="中" selected>🟡中</option><option value="高">🔴高</option></select></div>
+    <div class="form-row"><div style="flex:1;"><label>运动前血糖</label><input type="number" id="exPre" placeholder="mmol/L" step="0.1"></div><div style="flex:1;"><label>运动后血糖</label><input type="number" id="exPost" placeholder="mmol/L" step="0.1"></div></div>
+    <button class="btn btn-secondary" onclick="addExercise()">➕ 记录运动</button>
+  </div>
+  <div id="todayRecords"></div>
+</div>
+
+<!-- ================== TAB 2 ================== -->
+<div id="tab-analysis" style="display:none;">
+  <div class="card" style="background:#fdfaf7;border:1px solid #e8dcc8;">
+    <h3>💾 数据同步</h3>
+    <div id="syncStatus" style="font-size:0.75em;margin-bottom:8px;color:var(--muted);"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+      <button class="btn btn-sm btn-outline" id="autoSaveBtn" onclick="setupAutoSave()" style="flex:1;min-width:80px;">💾 自动保存</button>
+      <button class="btn btn-sm btn-outline" onclick="exportData()" style="flex:1;min-width:80px;">📤 导出</button>
+      <button class="btn btn-sm btn-outline" onclick="document.getElementById('importFile').click()" style="flex:1;min-width:80px;">📥 导入</button>
+      <button class="btn btn-sm btn-outline" id="gistSyncBtn" onclick="gistSync()" style="flex:1;min-width:80px;">☁️ Gist</button>
+      <input type="file" id="importFile" accept=".json" onchange="importData(this)" style="display:none;">
+    </div>
+    <p style="font-size:0.7em;color:var(--muted);">
+      <b>💾 自动保存</b>：选一个文件（建议放 OneDrive/Dropbox/iCloud 文件夹），之后每次记录自动写入，云盘实时同步。<br>
+      <b>📤/📥</b>：手动备份恢复。 <b>☁️ Gist</b>：换浏览器自动恢复。</p>
+  </div>
+  <div class="card"><h3>🍎 我的水果/零食：基于真实血糖</h3><div id="mySnacks"></div></div>
+  <div class="card"><h3>🏃 我的运动：基于真实血糖</h3><div id="myExercises"></div></div>
+  <div class="card"><h3>🍽️ 三餐分析</h3><div id="myMeals"></div></div>
+  <div class="card"><h3>📈 近7天趋势</h3><div id="myTrend"></div></div>
+</div>
+
+<!-- ================== TAB 3 ================== -->
+<div id="tab-guide" style="display:none;">
+  <div class="card"><h3>🍱 一餐怎么算"合理"？</h3><table><tr><th>要素</th><th>标准</th><th>说明</th></tr><tr><td>🥬 膳食纤维</td><td class="tag-green">每餐≥5g</td><td>蔬菜/菌菇/种子/全谷物——先吃纤维打底</td></tr><tr><td>🥩 优质蛋白</td><td class="tag-green">每餐≥20g</td><td>肉/鱼/蛋/豆/奶，维持饱腹感和肌肉</td></tr><tr><td>🍚 碳水质量</td><td class="tag-orange">选低GI</td><td>全谷物>精制碳水，功能碳水(抗性淀粉)是加分项</td></tr><tr><td>🫒 健康脂肪</td><td class="tag-green">适量</td><td>橄榄油/坚果/鱼油/种子，延缓胃排空</td></tr><tr><td>🌿 香料/活性成分</td><td class="tag-green">加分项</td><td>肉桂/姜黄/醋——有助改善胰岛素敏感性</td></tr></table></div>
+  <div class="card"><h3>🔍 常见营养缺口与替换</h3><table><tr><th>问题</th><th>缺少</th><th>推荐替换/补充</th></tr><tr><td>一碗面/粉解决一顿</td><td class="tag-red">蛋白质+纤维</td><td>加蛋+烫青菜+卤牛肉</td></tr><tr><td>白米饭+炒土豆丝</td><td class="tag-red">碳水超标</td><td>土豆换绿叶菜，米饭减半→杂豆饭</td></tr><tr><td>外卖饭多菜少肉少</td><td class="tag-orange">蛋白质+纤维</td><td>自备即食鸡胸肉/豆腐干，饭吃一半</td></tr><tr><td>早餐只吃包子馒头</td><td class="tag-orange">蛋白质+纤维</td><td>加鸡蛋+无糖豆浆+小番茄</td></tr></table></div>
+  <div class="card" style="background:#fdfaf5;border:1px solid #e8dcc8;"><h3>🔑 控糖黄金法则</h3><p style="font-size:0.87em;margin-bottom:6px;">1. <strong>进食顺序</strong>：纤维→蛋白→碳水，降餐后血糖20-30%</p><p style="font-size:0.87em;margin-bottom:6px;">2. <strong>餐后微运动</strong>：餐后30分钟内散步15-30分钟</p><p style="font-size:0.87em;margin-bottom:6px;">3. <strong>加酸</strong>：醋/柠檬汁抑制淀粉酶，延缓升糖</p><p style="font-size:0.87em;margin-bottom:6px;">4. <strong>干湿分离</strong>：吃饭不喝汤/水，饭后30分钟再喝</p><p style="font-size:0.87em;margin-bottom:6px;">5. <strong>晚餐控碳</strong>：晚上胰岛素敏感性最低，碳水减半</p><p style="font-size:0.87em;">6. <strong>睡眠修复</strong>：7-8小时，睡眠不足→皮质醇→空腹血糖升高</p></div>
+</div>
+</div>
+
+<script>
+var STORE = 'glucose_tracker_v4';
+function ld(){ try{ return JSON.parse(localStorage.getItem(STORE))||{}; }catch(e){ return{}; } }
+function sv(d){ localStorage.setItem(STORE, JSON.stringify(d)); }
+function dk(d){ return typeof d==='string'?d:d.toISOString().slice(0,10); }
+var cd = new Date();
+function changeDate(d){ cd.setDate(cd.getDate()+d); renderLogTab(); }
+function goToday(){ cd=new Date(); renderLogTab(); }
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(function(t,i){ t.classList.toggle('active',(tab==='log'&&i===0)||(tab==='analysis'&&i===1)||(tab==='guide'&&i===2)); });
+  document.getElementById('tab-log').style.display = tab==='log'?'block':'none';
+  document.getElementById('tab-analysis').style.display = tab==='analysis'?'block':'none';
+  document.getElementById('tab-guide').style.display = tab==='guide'?'block':'none';
+  if(tab==='analysis'){ renderAnalysisTab(); updateSyncStatus(); }
+  if(tab==='log') renderLogTab();
+}
+
+// ==================== FOOD KNOWLEDGE BASE ====================
+// Each food: { tags: [categories], note: '...' }
+// Categories: carb_fast(精制快碳), carb_slow(慢碳), carb_func(功能性碳水/抗性淀粉)
+//   protein_animal, protein_plant, fiber_high, fiber_medium
+//   fat_healthy, fat_unhealthy, processed(精加工/添加糖)
+//   spice_beneficial(有益香料), acid(酸), micro_rich(微量元素丰富)
+var FOOD_DB = {
+  // ---- 功能性碳水 / 特殊淀粉 ----
+  '抗性淀粉':{ tags:['carb_func','fiber_medium'], note:'不被小肠消化，不升血糖，喂养肠道菌群产生短链脂肪酸(SCFA)，改善胰岛素敏感性' },
+  '抗性淀粉冲剂':{ tags:['carb_func','fiber_medium'], note:'同抗性淀粉，冲剂形式方便，餐前或随餐饮用可降低整餐血糖反应' },
+  '抗性糊精':{ tags:['carb_func','fiber_high'], note:'水溶性膳食纤维，延缓碳水吸收，降低餐后血糖' },
+  '改性淀粉':{ tags:['carb_func'], note:'取决于类型，部分抗性淀粉属于功能性碳水' },
+  '菊粉':{ tags:['carb_func','fiber_high'], note:'益生元纤维，不升血糖，促进肠道健康' },
+  '低聚果糖':{ tags:['carb_func','fiber_high'], note:'益生元，不升血糖，甜味剂中少数有益肠道健康的' },
+  '聚葡萄糖':{ tags:['carb_func','fiber_high'], note:'可溶性纤维，不升血糖，常用作代糖填充剂' },
+
+  // ---- 种子/坚果 ----
+  '奇亚籽':{ tags:['fiber_high','fat_healthy','protein_plant','carb_slow'], note:'超高纤维(34g/100g)+Omega-3，遇水膨胀形成凝胶延缓胃排空，几乎不升血糖' },
+  '亚麻籽':{ tags:['fiber_high','fat_healthy','protein_plant'], note:'富含木酚素和Omega-3，磨碎后营养更好吸收，不升血糖' },
+  '火麻仁':{ tags:['fat_healthy','protein_plant'], note:'完全植物蛋白+Omega-3/6黄金比例' },
+  '南瓜籽':{ tags:['fat_healthy','protein_plant','micro_rich'], note:'富含镁和锌，有助胰岛素功能' },
+  '葵花籽':{ tags:['fat_healthy','protein_plant','micro_rich'], note:'富含维E和硒' },
+  '芝麻':{ tags:['fat_healthy','micro_rich'], note:'富含钙和芝麻素' },
+  '杏仁':{ tags:['fat_healthy','protein_plant','fiber_medium','micro_rich'], note:'富含维E和镁，研究显示随餐吃杏仁可降低餐后血糖' },
+  '核桃':{ tags:['fat_healthy','protein_plant','micro_rich'], note:'Omega-3含量最高的坚果，有助抗炎' },
+  '腰果':{ tags:['fat_healthy','protein_plant'], note:'GI较低但碳水略高于其他坚果' },
+  '开心果':{ tags:['fat_healthy','protein_plant','fiber_medium'], note:'有研究显示随餐吃开心果可降低餐后血糖' },
+  '巴西坚果':{ tags:['fat_healthy','micro_rich'], note:'硒含量极高，每天1-2颗即够' },
+  '夏威夷果':{ tags:['fat_healthy'], note:'单不饱和脂肪最高，碳水极低' },
+  '山核桃':{ tags:['fat_healthy','micro_rich'], note:'富含抗氧化物质' },
+  '花生':{ tags:['fat_healthy','protein_plant','fiber_medium'], note:'实际是豆类，GI低，研究显示可降低餐后血糖反应' },
+
+  // ---- 香料/超级食物 ----
+  '姜黄粉':{ tags:['spice_beneficial'], note:'姜黄素抗炎抗氧化，可能改善胰岛素敏感性，搭配黑胡椒吸收率提升20倍' },
+  '姜黄':{ tags:['spice_beneficial'], note:'同姜黄粉' },
+  '肉桂粉':{ tags:['spice_beneficial'], note:'研究显示可改善胰岛素敏感性，降低空腹血糖，每天1/4-1茶匙有效' },
+  '肉桂':{ tags:['spice_beneficial'], note:'同肉桂粉，选锡兰肉桂(Ceylon)优于桂皮(Cassia)' },
+  '姜':{ tags:['spice_beneficial'], note:'抗炎，可能改善胰岛素敏感性' },
+  '生姜':{ tags:['spice_beneficial'], note:'同姜' },
+  '大蒜':{ tags:['spice_beneficial','micro_rich'], note:'含大蒜素，可能降低空腹血糖和HbA1c' },
+  '黑胡椒':{ tags:['spice_beneficial'], note:'含胡椒碱，可大幅提升姜黄素吸收率' },
+  '丁香':{ tags:['spice_beneficial'], note:'抗氧化能力最强的香料之一' },
+  '迷迭香':{ tags:['spice_beneficial'], note:'抗氧化，可能抑制AGEs(糖化终产物)形成' },
+  '牛至':{ tags:['spice_beneficial'], note:'抗氧化抗炎' },
+
+  // ---- 油脂 ----
+  '橄榄油':{ tags:['fat_healthy'], note:'单不饱和脂肪为主，延缓胃排空平缓血糖，地中海饮食核心' },
+  '特级初榨橄榄油':{ tags:['fat_healthy'], note:'冷榨保留多酚，抗氧化抗炎' },
+  '椰子油':{ tags:['fat_healthy'], note:'中链甘油三酯(MCT)，快速供能不依赖胰岛素' },
+  'MCT油':{ tags:['fat_healthy'], note:'中链甘油三酯，直接供能不升血糖，生酮友好' },
+  '亚麻籽油':{ tags:['fat_healthy'], note:'高Omega-3，不耐热只能凉拌' },
+  '牛油果油':{ tags:['fat_healthy'], note:'高烟点+单不饱和脂肪，适合高温烹饪' },
+  '鱼油':{ tags:['fat_healthy'], note:'Omega-3(DHA/EPA)抗炎，改善胰岛素敏感性' },
+
+  // ---- 蛋白粉/补充剂 ----
+  '乳清蛋白':{ tags:['protein_animal'], note:'吸收快，研究显示餐前喝乳清蛋白可降低餐后血糖20-30%' },
+  '酪蛋白':{ tags:['protein_animal'], note:'吸收慢，睡前喝有助夜间血糖稳定' },
+  '豌豆蛋白':{ tags:['protein_plant'], note:'低过敏性植物蛋白，富含支链氨基酸' },
+  '大豆蛋白':{ tags:['protein_plant'], note:'完全植物蛋白，有助控糖' },
+  '胶原蛋白':{ tags:['protein_animal'], note:'对皮肤关节有益，但不含色氨酸' },
+  '蛋白粉':{ tags:['protein_animal'], note:'补充蛋白质的便捷方式' },
+
+  // ---- 其他功能性食品 ----
+  '洋车前子壳':{ tags:['fiber_high'], note:'几乎全是可溶性纤维(80%+)，强力延缓碳水吸收，零升糖' },
+  '车前子壳':{ tags:['fiber_high'], note:'同洋车前子壳' },
+  '圆苞车前子壳':{ tags:['fiber_high'], note:'同洋车前子壳' },
+  '魔芋':{ tags:['fiber_high'], note:'葡甘露聚糖，零升糖，遇水膨胀50倍增加饱腹感' },
+  '魔芋面':{ tags:['fiber_high','carb_slow'], note:'几乎零碳水零热量，替代面条' },
+  '魔芋米':{ tags:['fiber_high','carb_slow'], note:'替代米饭的零碳水选择' },
+  '苹果醋':{ tags:['acid','spice_beneficial'], note:'醋酸抑制淀粉酶+延缓胃排空，研究显示餐前或随餐饮用降餐后血糖20-30%' },
+  '椰子aminos':{ tags:[], note:'酱油替代品，低钠无麸质' },
+
+  // ---- 蛋奶 ----
+  '鸡蛋':{ tags:['protein_animal','fat_healthy','micro_rich'], note:'完全蛋白，零碳水，对血糖无影响。蛋黄含胆碱和叶黄素' },
+  '水煮蛋':{ tags:['protein_animal','fat_healthy'], note:'同鸡蛋，水煮方式最健康' },
+  '荷包蛋':{ tags:['protein_animal','fat_healthy'], note:'同鸡蛋' },
+  '炒蛋':{ tags:['protein_animal','fat_healthy'], note:'注意烹饪用油量' },
+  '牛奶':{ tags:['protein_animal','carb_slow'], note:'乳糖GI低(27-38)+蛋白延缓吸收，全脂比脱脂更有利于控糖' },
+  '全脂牛奶':{ tags:['protein_animal','fat_healthy','carb_slow'], note:'脂肪延缓乳糖吸收，比脱脂奶更适合控糖' },
+  '无糖酸奶':{ tags:['protein_animal','carb_slow'], note:'发酵后乳糖部分分解，GI更低，益生菌有益肠道' },
+  '希腊酸奶':{ tags:['protein_animal'], note:'蛋白质含量是普通酸奶的2倍，碳水更低' },
+
+  // ---- 饮品 ----
+  '绿茶':{ tags:['spice_beneficial'], note:'EGCG抑制α-葡萄糖苷酶(延缓碳水吸收)，随餐饮用有助控糖' },
+  '抹茶':{ tags:['spice_beneficial'], note:'整片茶叶粉末，EGCG浓度更高' },
+  '乌龙茶':{ tags:['spice_beneficial'], note:'茶多酚有助控糖' },
+  '黑咖啡':{ tags:[], note:'短期可能轻微升血糖(应激激素)，长期改善胰岛素敏感性' },
+  '无糖豆浆':{ tags:['protein_plant','carb_slow'], note:'低GI+植物蛋白，控糖友好' },
+  '康普茶':{ tags:['acid','spice_beneficial'], note:'发酵茶，含有机酸和益生菌' },
+
+  // ---- 甜味剂 ----
+  '赤藓糖醇':{ tags:[], note:'零GI，不升血糖不升胰岛素，耐受性好' },
+  '甜菊糖':{ tags:[], note:'零GI，天然甜味剂，可能改善胰岛素敏感性' },
+  '罗汉果糖':{ tags:[], note:'零GI，天然甜味剂，抗氧化' },
+  '阿洛酮糖':{ tags:[], note:'稀有糖，几乎零热量，可能轻微降低血糖' },
+};
+
+// Substitution database (kept for suggestions)
+var SUBSTITUTES = {
+  '米饭':'糙米饭、藜麦饭、花椰菜米、杂豆饭',
+  '白米饭':'糙米饭、藜麦饭、花椰菜米、杂豆饭',
+  '馒头':'全麦馒头、荞麦馒头、燕麦麸馒头',
+  '白馒头':'全麦馒头、荞麦馒头、燕麦麸馒头',
+  '面包':'全麦酸面包、黑麦面包、杏仁粉低碳面包',
+  '白面包':'全麦酸面包、黑麦面包、杏仁粉低碳面包',
+  '面条':'荞麦面、全麦面、魔芋面、西葫芦面',
+  '米线':'荞麦面、魔芋粉丝、全麦意面',
+  '河粉':'魔芋面、全麦意面',
+  '方便面':'荞麦面饼、魔芋面',
+  '油条':'全麦煎饼、水煮蛋',
+  '土豆':'红薯、山药、芋头',
+  '土豆泥':'花椰菜泥、鹰嘴豆泥',
+  '白粥':'燕麦粥（钢切）、小米粥、藜麦粥',
+  '糯米':'黑米、紫米、糙米',
+  '可乐':'无糖气泡水+柠檬片、苏打水、冷泡茶',
+  '汽水':'无糖气泡水+柠檬片、苏打水',
+  '果汁':'完整水果（草莓/蓝莓/柚子）、柠檬水',
+  '奶茶':'无糖纯茶+纯牛奶、无糖豆浆',
+  '蛋糕':'黑巧克力(≥85%)、希腊酸奶+蓝莓',
+  '饼干':'原味坚果、烤鹰嘴豆、海苔片',
+  '糖果':'黑巧克力(≥85%)、冻干草莓',
+  '白糖':'赤藓糖醇、甜菊糖、罗汉果糖',
+  '蜂蜜':'甜菊糖、赤藓糖醇',
+  '果酱':'新鲜莓果泥、无糖花生酱',
+  '巧克力':'黑巧克力(≥85%)',
+  '薯片':'烤羽衣甘蓝脆片、原味坚果',
+};
+
+// Regex patterns as fallback
+var NUTRI = {
+  carbFast: /米饭(?!糙|黑|紫|红|藜|杂)|白饭|白馒头|馒头(?!全|荞|杂|燕)|白面包|精面|白面条|面条(?!全|荞)|米线|河粉|肠粉|油条|烧饼|大饼|包子皮|饺子皮|汤圆|粽子|年糕|白粥|糯米饭|即食麦片|土豆泥|凉皮|拉面|方便面|油饼|糍粑|麻团|馕|烙饼|发糕|米糕/,
+  carbSlow: /糙米|黑米|紫米|红米|全麦|玉米|红薯|地瓜|山药|芋头|南瓜|小米|荞麦|燕麦(?!即食)|土豆(?!泥)|杂粮|栗子|菱角|藜麦|鹰嘴豆|红豆|绿豆|扁豆|杂豆|薏米|黑麦|青稞/,
+  proteinA: /肉(?!松|桂)|鸡|鸭|鹅|猪|牛|羊|鱼|虾|蟹|贝|蚝|蛤|鲍|鱿鱼|章鱼|三文|金枪|鳕鱼|龙利|带鱼|鲈鱼|鲑|鳗|排(?!骨)|虾仁|干贝|海参|三文鱼|沙丁鱼/,
+  proteinP: /豆腐|豆干|豆皮|腐竹|豆泡|千张|百叶|素鸡|天贝|纳豆|毛豆|黄豆|黑豆|豆浆|豆奶|面筋|烤麸|豆花|蛋白粉(?!.*乳清)/,
+  fiberH: /菜(?!花椰菜米)|青菜|白菜|菠菜|生菜|油麦菜|韭菜|芹菜|芥蓝|空心菜|油菜|茼蒿|苋菜|卷心菜|包菜|花菜|西兰花|黄瓜|冬瓜|苦瓜|丝瓜|茄子|青椒|辣椒|豆角|四季豆|豇豆|荷兰豆|豆芽|萝卜|胡萝卜|笋|芦笋|莴笋|洋葱|蒜苗|葱|菌|菇|木耳|银耳|海带|紫菜|裙带菜|秋葵|西葫芦|羽衣甘蓝|芝麻菜|彩椒|甜椒|芥菜|娃娃菜|番茄|西红柿|芹菜|芦荟|秋葵|菊苣/,
+  fatH: /橄榄油(?!.*特级)|椰子油|牛油果|鱼油|亚麻籽油|MCT|三文鱼|沙丁鱼/,
+  bad: /油炸|炸鸡|炸猪|炸鱼|薯条|薯片|油条|油饼|肥肉|猪油|黄油|奶油|起酥|人造黄油|植脂末|奶精|可乐|汽水|奶茶(?!.*无糖)|含糖饮料|果汁(?!.*蔬菜)|蛋糕|饼干|糖果|冰淇淋|奶昔|甜甜圈|蛋挞|布丁|果冻|炼乳|糖浆|焦糖|蜂蜜(?!.*麦卢卡)|白糖|冰糖|红糖|巧克力(?!.*≥85|黑巧|无糖)|果酱|蜜饯|话梅|辣条|方便面|罐头|火腿肠|培根|香肠|腊肉|咸鱼|榨菜|咸菜|泡面/,
+};
+
+// ==================== EVALUATION ENGINE ====================
+function analyzeFood(foodName){
+  // 1. Check knowledge base
+  var f = foodName.trim();
+  for(var key in FOOD_DB){
+    if(f.indexOf(key)!==-1 || key.indexOf(f)!==-1){
+      return { found:true, name:key, tags:FOOD_DB[key].tags, note:FOOD_DB[key].note };
+    }
+  }
+  // 2. Check patterns
+  var tags = [];
+  for(var k in NUTRI){
+    if(NUTRI[k].test(f)) tags.push(k);
+  }
+  if(tags.length>0) return { found:true, name:f, tags:tags, note:'' };
+  // 3. Unknown
+  return { found:false, name:f, tags:[], note:'' };
+}
+
+function evaluateMeal(foodText){
+  var foods = foodText.split(/[,，、\n]+/).map(function(f){ return f.trim(); }).filter(function(f){ return f.length>0; });
+  if(foods.length===0) return { score:0, level:'none', items:[], suggestions:[], alternatives:[], summary:'', unrecognized:[] };
+
+  var results = [];
+  var unrecognized = [];
+  foods.forEach(function(f){
+    var r = analyzeFood(f);
+    results.push(r);
+    if(!r.found) unrecognized.push(f);
+  });
+
+  // Aggregate tags
+  var allTags = [];
+  results.forEach(function(r){ allTags = allTags.concat(r.tags); });
+
+  var hasFuncCarb = allTags.indexOf('carb_func')!==-1;
+  var hasSlowCarb = allTags.indexOf('carb_slow')!==-1;
+  var hasFastCarb = allTags.indexOf('carb_fast')!==-1;
+  var hasCarbFast = allTags.filter(function(t){ return t==='carbFast'; }).length>0;
+  var hasCarbSlow = allTags.filter(function(t){ return t==='carbSlow'; }).length>0 || hasSlowCarb;
+  var hasAnimPro = allTags.indexOf('protein_animal')!==-1 || allTags.filter(function(t){ return t==='proteinA'; }).length>0;
+  var hasPlantPro = allTags.indexOf('protein_plant')!==-1 || allTags.filter(function(t){ return t==='proteinP'; }).length>0;
+  var fiberHigh = allTags.indexOf('fiber_high')!==-1 || allTags.filter(function(t){ return t==='fiberH'; }).length>0;
+  var fiberMed = allTags.indexOf('fiber_medium')!==-1;
+  var hasHealthyFat = allTags.indexOf('fat_healthy')!==-1 || allTags.filter(function(t){ return t==='fatH'; }).length>0;
+  var hasBad = allTags.filter(function(t){ return t==='bad'; }).length>0;
+  var hasSpice = allTags.indexOf('spice_beneficial')!==-1;
+  var hasAcid = allTags.indexOf('acid')!==-1;
+  var hasMicro = allTags.indexOf('micro_rich')!==-1;
+
+  var items = [];
+  var score = 0;
+
+  // 1. Carb quality (20pts)
+  if(hasFuncCarb && !hasCarbFast){
+    items.push({ text:'碳水质量：功能性碳水（抗性淀粉），不升血糖反而有益肠道和胰岛素敏感性 ✅', level:'good' });
+    score += 20;
+  } else if(hasCarbSlow && !hasCarbFast){
+    items.push({ text:'碳水质量：低GI慢碳为主，血糖影响平缓 ✅', level:'good' });
+    score += 18;
+  } else if(hasCarbFast && (hasCarbSlow||hasFuncCarb)){
+    items.push({ text:'碳水质量：精制+慢碳混合，还有优化空间', level:'warn' });
+    score += 12;
+  } else if(hasCarbFast){
+    items.push({ text:'碳水质量：精制快碳为主，易引起血糖骤升', level:'bad' });
+    score += 4;
+  } else {
+    items.push({ text:'碳水：未检测到明显碳水来源（可能是低碳/生酮餐）', level:'warn' });
+    score += 12;
+  }
+
+  // 2. Protein (20pts)
+  if(hasAnimPro && hasPlantPro){
+    items.push({ text:'蛋白质：动+植物双蛋白，氨基酸互补 ✅', level:'good' }); score += 20;
+  } else if(hasAnimPro){
+    items.push({ text:'蛋白质：有动物蛋白 ✅', level:'good' }); score += 18;
+  } else if(hasPlantPro){
+    items.push({ text:'蛋白质：植物蛋白，可搭配谷物互补氨基酸', level:'good' }); score += 15;
+  } else {
+    items.push({ text:'蛋白质：❌ 本餐缺少蛋白质', level:'bad' }); score += 0;
+  }
+
+  // 3. Fiber (20pts)
+  if(fiberHigh){
+    items.push({ text:'膳食纤维：有高纤维食物（奇亚籽/洋车前子壳/蔬菜等），有效延缓血糖上升 ✅', level:'good' });
+    score += 20;
+  } else if(fiberMed){
+    items.push({ text:'膳食纤维：有中等纤维来源', level:'good' }); score += 15;
+  } else {
+    items.push({ text:'膳食纤维：缺少，建议加蔬菜/种子/菌菇', level:'bad' }); score += 2;
+  }
+
+  // 4. Fat (10pts)
+  if(hasHealthyFat && !hasBad){
+    items.push({ text:'脂肪质量：健康脂肪来源 ✅', level:'good' }); score += 10;
+  } else if(hasHealthyFat && hasBad){
+    items.push({ text:'脂肪质量：健康+不健康脂肪混合', level:'warn' }); score += 5;
+  } else if(!hasHealthyFat && !hasBad){
+    items.push({ text:'脂肪：未检测到明显脂肪来源', level:'warn' }); score += 6;
+  } else {
+    score += 0;
+  }
+
+  // 5. Processing & sugar (15pts)
+  if(hasBad){
+    items.push({ text:'加工程度：含精加工/高糖食品（会直接推高血糖）', level:'bad' }); score += 2;
+  } else {
+    items.push({ text:'加工程度：以天然/全食物为主 ✅', level:'good' }); score += 15;
+  }
+
+  // 6. Micronutrients & functional bonus (15pts)
+  var bonus = 6;
+  if(hasSpice){ items.push({ text:'加分项：含肉桂/姜黄等有益香料，有助改善胰岛素敏感性 ✅', level:'good' }); bonus += 4; }
+  if(hasAcid){ items.push({ text:'加分项：含醋/酸味，抑制淀粉酶延缓升糖 ✅', level:'good' }); bonus += 3; }
+  if(hasMicro){ items.push({ text:'加分项：含微量元素丰富的食物 ✅', level:'good' }); bonus += 2; }
+  if(hasFuncCarb){ items.push({ text:'加分项：抗性淀粉喂养肠道菌群产生短链脂肪酸，长期改善代谢 ✅', level:'good' }); bonus += 3; }
+  score += Math.min(15, bonus);
+
+  // Final
+  var finalScore = Math.round(score/100*100);
+  var level, summary;
+  if(finalScore>=75){ level='good'; summary='这餐搭配合理，营养素全面，血糖影响可控'; }
+  else if(finalScore>=50){ level='warn'; summary='基本及格，有几个营养缺口需要补充'; }
+  else { level='bad'; summary='营养不均衡，容易引起血糖大幅波动'; }
+
+  var suggestions = [];
+  if(!hasAnimPro && !hasPlantPro) suggestions.push('🔴 缺蛋白质：加鸡蛋/鱼/豆腐/无糖酸奶');
+  if(!fiberHigh && !fiberMed) suggestions.push('🔴 缺膳食纤维：加蔬菜/奇亚籽/洋车前子壳/菌菇');
+  if(hasCarbFast && !hasCarbSlow && !hasFuncCarb) suggestions.push('🟡 碳水全为精制：尝试糙米:白米=1:1混合或加抗性淀粉');
+  if(hasBad) suggestions.push('🟡 精加工食品：坚果替饼干，水果替糖果，气泡水替汽水');
+
+  // Substitutes for problematic foods
+  var alternatives = [];
+  if(hasCarbFast || hasBad){
+    foods.forEach(function(f){
+      var sub = findSub(f);
+      if(sub) alternatives.push({ original:f, suggestion:sub });
+    });
+  }
+
+  // Notes from knowledge base
+  var notes = [];
+  results.forEach(function(r){
+    if(r.note) notes.push({ food:r.name, note:r.note });
+  });
+
+  return { score:finalScore, level:level, items:items, suggestions:suggestions, alternatives:alternatives.slice(0,4), summary:summary, foodCount:foods.length, unrecognized:unrecognized, notes:notes };
+}
+
+function findSub(food){
+  for(var k in SUBSTITUTES){ if(food.indexOf(k)!==-1||k.indexOf(food)!==-1) return SUBSTITUTES[k]; }
+  return null;
+}
+
+function renderEvalHTML(ev){
+  if(!ev||ev.level==='none') return '';
+  var cls = ev.level==='good'?'good':ev.level==='warn'?'warn':'bad';
+  var icon = ev.level==='good'?'✅':ev.level==='warn'?'⚠️':'❌';
+  var h = '<div class="eval-card '+cls+'"><div><span class="eval-score">'+icon+' '+ev.score+'分</span> — '+ev.summary+'</div>';
+  ev.items.forEach(function(i){ h += '<div class="eval-item '+i.level+'">'+i.text+'</div>'; });
+  if(ev.suggestions.length>0) h += '<div class="eval-suggest">💡 <strong>改进建议：</strong><br>'+ev.suggestions.map(function(s){ return '&nbsp;&nbsp;'+s; }).join('<br>')+'</div>';
+  if(ev.alternatives.length>0) h += '<div class="eval-suggest" style="border-top:1px dashed #b8d8c0;">🔄 <strong>推荐替换：</strong><br>'+ev.alternatives.map(function(a){ return '&nbsp;&nbsp;<span class="eval-alt">'+a.original+'</span> → '+a.suggestion; }).join('<br>')+'</div>';
+  if(ev.notes.length>0) h += '<div class="eval-suggest" style="border-top:1px dashed #b8d8c0;">📚 <strong>食物营养参考：</strong><br>'+ev.notes.map(function(n){ return '&nbsp;&nbsp;<strong>'+n.food+'</strong>：'+n.note; }).join('<br>')+'</div>';
+  h += '</div>';
+  return h;
+}
+
+function updateUnrecognized(ev){
+  var div = document.getElementById('unrecognizedFoods');
+  if(!ev||!ev.unrecognized||ev.unrecognized.length===0){ div.innerHTML=''; return; }
+  div.innerHTML = '<span style="color:var(--warn);">⚠️ 未识别的食物：</span> '
+    + ev.unrecognized.map(function(f){ return '<span class="unrecognized" onclick="quickSearch(\''+f+'\')" title="点击查询">'+f+' 🔍</span>'; }).join(' ');
+}
+
+// ==================== AI SEARCH (DeepSeek) ====================
+function aiSearchFood(){
+  var input = document.getElementById('aiSearchInput').value.trim();
+  if(!input) return;
+  var query = encodeURIComponent(input+' 营养成分 升糖指数 GI 对血糖的影响');
+  doAISearch(query, input);
+}
+
+function quickSearch(foodName){
+  document.getElementById('aiSearchInput').value = foodName;
+  aiSearchFood();
+}
+
+function aiAnalyzeMeal(){
+  var foodText = document.getElementById('mealFood').value.trim();
+  if(!foodText) return;
+  var query = encodeURIComponent('分析这一餐对血糖的影响：'+foodText+'。请从营养素角度（碳水质量、蛋白质、膳食纤维、脂肪、微量元素、加工程度）评估，并给出改进建议和具体替代食物');
+  doAISearch(query, '整餐分析');
+}
+
+function doAISearch(query, label){
+  var loading = document.getElementById('aiLoading');
+  var result = document.getElementById('aiResult');
+  loading.style.display = 'block';
+  result.style.display = 'none';
+  result.innerHTML = '';
+
+  // Open DeepSeek in new tab for detailed analysis
+  var deepseekUrl = 'https://chat.deepseek.com/';
+  window.open(deepseekUrl, '_blank');
+
+  // Also try to fetch via a search-friendly approach
+  // Use DuckDuckGo's instant answer API (no CORS issues with html endpoint)
+  var searchUrl = 'https://html.duckduckgo.com/html/?q=' + query;
+
+  fetch(searchUrl)
+    .then(function(r){ return r.text(); })
+    .then(function(html){
+      loading.style.display = 'none';
+      // Extract snippet text
+      var tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      var snippets = tmp.querySelectorAll('.result__snippet');
+      if(snippets.length>0){
+        var text = '';
+        snippets.forEach(function(s,i){ if(i<3) text += '<p style="margin-bottom:6px;">• '+s.textContent.trim()+'</p>'; });
+        result.innerHTML = '<div style="font-size:0.82em;">🔍 <strong>'+label+'</strong> 的搜索结果：<br>'+text+'<p style="color:var(--muted);font-size:0.75em;margin-top:4px;">已在 DeepSeek Chat 中打开详细查询</p></div>';
+      } else {
+        result.innerHTML = '<p style="font-size:0.82em;color:var(--muted);">已在新标签页打开 DeepSeek Chat，请在对话框中粘贴查询</p><p style="font-size:0.78em;margin-top:4px;color:var(--muted);">查询内容：'+decodeURIComponent(query)+'</p>';
+      }
+      result.style.display = 'block';
+    })
+    .catch(function(){
+      loading.style.display = 'none';
+      result.innerHTML = '<p style="font-size:0.82em;">已在新标签页打开 DeepSeek Chat 进行查询</p><p style="font-size:0.78em;margin-top:4px;color:var(--muted);">如未自动跳转，请手动打开 <a href="https://chat.deepseek.com/" target="_blank">chat.deepseek.com</a></p>';
+      result.style.display = 'block';
+    });
+}
+
+// ==================== DAILY LOG ====================
+function renderLogTab(){
+  var ds = dk(cd);
+  document.getElementById('currentDate').textContent = ds+' 周'+['日','一','二','三','四','五','六'][cd.getDay()];
+  var data = ld(); var day = data[ds]||{ fasting:'', meals:[], snacks:[], exercises:[] };
+  document.getElementById('fastingGlucose').value = day.fasting||'';
+
+  var spikes = day.meals.filter(function(m){ return m.isSpike; }).length;
+  var allG = [];
+  day.meals.forEach(function(m){ if(m.preMeal) allG.push(+m.preMeal); if(m.peak) allG.push(+m.peak); });
+  (day.snacks||[]).forEach(function(s){ if(s.preGlucose) allG.push(+s.preGlucose); if(s.postPeak) allG.push(+s.postPeak); });
+  var avg = allG.length ? (allG.reduce(function(a,b){return a+b;},0)/allG.length).toFixed(1) : '--';
+  var range = allG.length>1 ? (Math.max.apply(null,allG)-Math.min.apply(null,allG)).toFixed(1) : '--';
+  var scores = day.meals.map(function(m){ return m.evalScore||0; }).filter(function(s){ return s>0; });
+  var avgScore = scores.length ? Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length) : '--';
+
+  document.getElementById('statFasting').textContent = day.fasting||'--';
+  document.getElementById('statFasting').className = 'value '+(+day.fasting>6.1?'danger':+day.fasting>0?'safe':'');
+  document.getElementById('statSpikes').textContent = spikes;
+  document.getElementById('statSpikes').className = 'value '+(spikes>2?'danger':spikes>0?'warn':'safe');
+  document.getElementById('statScore').textContent = avgScore;
+  document.getElementById('statScore').className = 'value '+(typeof avgScore==='number'?(avgScore>=75?'safe':avgScore>=50?'warn':'danger'):'');
+  document.getElementById('statRange').textContent = range;
+  document.getElementById('statRange').className = 'value '+(+range>4?'danger':+range>3?'warn':'');
+
+  var mo = {'🥐 早餐':0,'🍚 午餐':1,'🌙 晚餐':2};
+  var all = [].concat(
+    day.meals.map(function(m){ m._t='meal'; m._s=mo[m.type]||99; return m; }),
+    (day.snacks||[]).map(function(s){ s._t='snack'; s._s=50; return s; }),
+    day.exercises.map(function(e){ e._t='exercise'; e._s=60; return e; })
+  ).sort(function(a,b){ return (a._s-b._s)||(a.time||'99:99').localeCompare(b.time||'99:99'); });
+
+  var div = document.getElementById('todayRecords');
+  if(all.length===0){
+    div.innerHTML = '<div class="empty"><div class="big">📝</div><p>今天还没有记录</p></div>';
+  } else {
+    div.innerHTML = all.map(function(e){
+      if(e._t==='meal'){
+        var delta = e.peak&&e.preMeal ? (+e.peak-+e.preMeal).toFixed(1) : null;
+        var sp = delta!==null && +delta>=2.0;
+        var eh = e.evaluation ? renderEvalHTML(e.evaluation) : '';
+        var sb = e.evalScore ? '<span class="badge '+(e.evalScore>=75?'badge-safe':e.evalScore>=50?'badge-warn':'badge-danger')+'">营养'+e.evalScore+'分</span>' : '';
+        var h = '<div class="log-entry '+(sp?'spike':'safe')+'"><button class="del-btn" onclick="del(\'meals\','+day.meals.indexOf(e)+')">×</button>';
+        h += '<div class="entry-title">'+e.type+' <span style="font-weight:400;font-size:0.85em;">'+(e.time||'')+'</span> '+(sp?'<span class="badge badge-danger">⚠️炸糖</span>':(delta!==null?'<span class="badge badge-safe">✓安全</span>':''))+sb+'</div>';
+        h += '<div class="entry-detail">🍽️ '+(e.food||'(未记录)')+'</div>';
+        h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;font-size:0.8em;">';
+        h += '<span>餐前：<strong>'+(e.preMeal||'-')+'</strong></span>';
+        if(e.post30) h += '<span>30min：<strong>'+e.post30+'</strong></span>';
+        if(e.post60) h += '<span>1h：<strong>'+e.post60+'</strong></span>';
+        if(e.post120) h += '<span>2h：<strong>'+e.post120+'</strong></span>';
+        h += '<span>峰值：<strong>'+(e.peak||'-')+'</strong></span>';
+        if(delta!==null) h += '<span>Δ：<strong class="delta '+(sp?'spike':'safe')+'">'+(delta>=0?'+':'')+delta+'</strong></span>';
+        if(e.recovery) h += '<span>恢复：<strong style="color:var(--info);">'+e.recovery+'min</strong></span>';
+        h += '</div>'+eh+'</div>'; return h;
+      } else if(e._t==='snack'){
+        var fd = e.preGlucose&&e.postPeak ? (+e.postPeak-+e.preGlucose).toFixed(1) : null;
+        var fs = fd!==null && +fd>=1.5;
+        var im = {'水果':'🍎','零食':'🍪','饮品':'🥤','加餐':'🍞'};
+        return '<div class="log-entry '+(fs?'spike':'safe')+'"><button class="del-btn" onclick="del(\'snacks\','+day.snacks.indexOf(e)+')">×</button><div class="entry-title">'+(im[e.snackType]||'🍎')+' '+(e.name||'未命名')+' · '+(e.amount||'')+' <span style="font-weight:400;font-size:0.78em;color:var(--muted);">'+(e.snackType||'')+'</span> <span style="font-weight:400;font-size:0.85em;">'+(e.time||'')+'</span> '+(fs?'<span class="badge badge-danger">⚠️升糖</span>':(fd!==null?'<span class="badge badge-safe">✓安全</span>':''))+'</div><div style="font-size:0.8em;margin-top:4px;">吃前：<strong>'+(e.preGlucose||'-')+'</strong> → 峰值：<strong>'+(e.postPeak||'-')+'</strong>'+(fd!==null?' <span>Δ：<strong class="delta '+(fs?'spike':'safe')+'">'+(fd>=0?'+':'')+fd+'</strong></span>':'')+(e.recovery?' <span>恢复：<strong style="color:var(--info);">'+e.recovery+'min</strong></span>':'')+'</div></div>';
+      } else {
+        var ed = e.preEx&&e.postEx ? (+e.postEx-+e.preEx).toFixed(1) : null;
+        return '<div class="log-entry" style="border-left-color:var(--info);"><button class="del-btn" onclick="del(\'exercises\','+day.exercises.indexOf(e)+')">×</button><div class="entry-title">🏃 '+(e.type||'运动')+' · '+(e.duration||'?')+'min · '+(e.intensity||'')+'强度 <span style="font-weight:400;font-size:0.85em;">'+(e.time||'')+'</span></div><div style="font-size:0.8em;margin-top:4px;">运动前：<strong>'+(e.preEx||'-')+'</strong> → 运动后：<strong>'+(e.postEx||'-')+'</strong>'+(ed!==null?' <span>Δ：<strong style="color:var(--info);">'+(ed>=0?'+':'')+ed+'</strong></span>':'')+'</div></div>';
+      }
+    }).join('');
+  }
+}
+
+function addMeal(){
+  var ds = dk(cd); var data = ld();
+  if(!data[ds]) data[ds] = { fasting:'', meals:[], snacks:[], exercises:[] };
+  var ft = document.getElementById('mealFood').value;
+  var pre = document.getElementById('preMeal').value, p30=document.getElementById('post30').value, p60=document.getElementById('post60').value, p120=document.getElementById('post120').value;
+  var peak = document.getElementById('peakGlucose').value, rec = document.getElementById('recoveryTime').value;
+  if(!peak){ var vs=[p30,p60,p120].filter(function(v){return v!=='';}).map(Number); if(vs.length>0) peak=Math.max.apply(null,vs).toString(); }
+  var delta = peak&&pre ? (+peak-+pre) : null;
+  var evaluation = evaluateMeal(ft);
+  data[ds].meals.push({ type:document.getElementById('mealType').value, time:document.getElementById('mealTime').value, food:ft, preMeal:pre||null, post30:p30||null, post60:p60||null, post120:p120||null, peak:peak||null, recovery:rec||null, isSpike:delta!==null&&delta>=2.0, evaluation:evaluation, evalScore:evaluation.score });
+  sv(data);
+  ['mealFood','preMeal','post30','post60','post120','peakGlucose','recoveryTime'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('mealEvalPreview').innerHTML=''; document.getElementById('unrecognizedFoods').innerHTML='';
+  renderLogTab();
+}
+
+function addSnack(){
+  var ds = dk(cd); var data = ld();
+  if(!data[ds]) data[ds] = { fasting:'', meals:[], snacks:[], exercises:[] };
+  data[ds].snacks.push({ name:document.getElementById('snackName').value, amount:document.getElementById('snackAmount').value, snackType:document.getElementById('snackType').value, time:document.getElementById('snackTime').value, preGlucose:document.getElementById('snackPre').value||null, postPeak:document.getElementById('snackPeak').value||null, recovery:document.getElementById('snackRecovery').value||null });
+  sv(data);
+  ['snackName','snackAmount','snackPre','snackPeak','snackRecovery'].forEach(function(id){ document.getElementById(id).value=''; });
+  renderLogTab();
+}
+
+function addExercise(){
+  var ds = dk(cd); var data = ld();
+  if(!data[ds]) data[ds] = { fasting:'', meals:[], snacks:[], exercises:[] };
+  data[ds].exercises.push({ time:document.getElementById('exTime').value, type:document.getElementById('exType').value, duration:document.getElementById('exDuration').value, intensity:document.getElementById('exIntensity').value, preEx:document.getElementById('exPre').value||null, postEx:document.getElementById('exPost').value||null });
+  sv(data); ['exType','exDuration','exPre','exPost'].forEach(function(id){ document.getElementById(id).value=''; });
+  renderLogTab();
+}
+
+function del(field, idx){ if(!confirm('确定删除？')) return; var ds=dk(cd), data=ld(); data[ds][field].splice(idx,1); sv(data); renderLogTab(); }
+function saveDayData(){ var ds=dk(cd), data=ld(); if(!data[ds]) data[ds]={fasting:'',meals:[],snacks:[],exercises:[]}; data[ds].fasting=document.getElementById('fastingGlucose').value; sv(data); renderLogTab(); }
+
+document.addEventListener('DOMContentLoaded', function(){
+  var fi = document.getElementById('mealFood');
+  if(fi){ fi.addEventListener('input', function(){
+    var ev = evaluateMeal(this.value);
+    document.getElementById('mealEvalPreview').innerHTML = ev.level!=='none'?renderEvalHTML(ev):'';
+    updateUnrecognized(ev);
+  });}
+});
+
+// ==================== ANALYSIS TAB ====================
+function renderAnalysisTab(){
+  var data = ld(); var days = Object.keys(data).sort();
+  if(days.length===0){ ['mySnacks','myExercises','myMeals','myTrend'].forEach(function(id){ document.getElementById(id).innerHTML='<div class="empty"><p>还没有数据</p></div>'; }); return; }
+  var snackStats={}, exStats={};
+  var mealStats={'🥐 早餐':{count:0,spikes:0,scores:[],recoveries:[]},'🍚 午餐':{count:0,spikes:0,scores:[],recoveries:[]},'🌙 晚餐':{count:0,spikes:0,scores:[],recoveries:[]}};
+  var recent = days.slice(-7);
+  days.forEach(function(dk){
+    var day=data[dk]||{};
+    (day.snacks||[]).forEach(function(s){
+      var nm=s.name||'未命名'; if(!snackStats[nm]) snackStats[nm]={count:0,deltas:[],spikes:0,recoveries:[],lastDate:dk,types:[]};
+      snackStats[nm].count++; snackStats[nm].lastDate=dk;
+      if(s.snackType && snackStats[nm].types.indexOf(s.snackType)===-1) snackStats[nm].types.push(s.snackType);
+      if(s.preGlucose&&s.postPeak){ var d=+s.postPeak-+s.preGlucose; snackStats[nm].deltas.push(d); if(d>=1.5) snackStats[nm].spikes++; }
+      if(s.recovery) snackStats[nm].recoveries.push(+s.recovery);
+    });
+    (day.exercises||[]).forEach(function(e){ var t=e.type||'未知'; if(!exStats[t]) exStats[t]={count:0,deltas:[],durations:[],lastDate:dk}; exStats[t].count++; exStats[t].lastDate=dk; if(e.preEx&&e.postEx) exStats[t].deltas.push(+e.postEx-+e.preEx); if(e.duration) exStats[t].durations.push(+e.duration); });
+    (day.meals||[]).forEach(function(m){ if(mealStats[m.type]){ mealStats[m.type].count++; if(m.isSpike) mealStats[m.type].spikes++; if(m.evalScore) mealStats[m.type].scores.push(m.evalScore); if(m.recovery) mealStats[m.type].recoveries.push(+m.recovery); } });
+  });
+
+  // Snacks
+  var se=Object.entries(snackStats).sort(function(a,b){return b[1].count-a[1].count;});
+  document.getElementById('mySnacks').innerHTML = se.length===0 ? '<div class="empty"><p>还没有记录</p></div>'
+    : '<table><tr><th>名称</th><th>类型</th><th>次数</th><th>平均Δ</th><th>炸糖</th><th>平均恢复</th><th>最近</th><th>结论</th></tr>'+se.map(function(e){var nm=e[0],s=e[1];var ad=s.deltas.length>0?(s.deltas.reduce(function(a,b){return a+b;},0)/s.deltas.length).toFixed(1):'-';var sr=s.count>0?s.spikes/s.count:0;var ar=s.recoveries.length>0?Math.round(s.recoveries.reduce(function(a,b){return a+b;},0)/s.recoveries.length):'-';var tag=s.deltas.length===0?'<span class="tag-orange">数据待积累</span>':sr===0?'<span class="tag-green">🟢 对你安全</span>':sr<=0.33?'<span class="tag-orange">🟡 偶尔可以</span>':'<span class="tag-red">🔴 一吃就炸</span>';return '<tr><td style="text-align:left;font-weight:700;">'+nm+'</td><td style="font-size:0.73em;">'+(s.types.join('/')||'-')+'</td><td>'+s.count+'</td><td style="color:'+(+ad>=1.5?'var(--danger)':'var(--safe)')+';font-weight:700;">'+(ad!=='-'?('+'+ad):'-')+'</td><td>'+s.spikes+'</td><td style="color:var(--info);">'+(ar!=='-'?ar+'min':'-')+'</td><td style="font-size:0.7em;">'+s.lastDate+'</td><td>'+tag+'</td></tr>';}).join('')+'</table>';
+
+  // Exercises
+  var ee=Object.entries(exStats).sort(function(a,b){return b[1].count-a[1].count;});
+  document.getElementById('myExercises').innerHTML = ee.length===0 ? '<div class="empty"><p>还没有运动记录</p></div>'
+    : '<table><tr><th>运动</th><th>次数</th><th>平均降糖</th><th>平均时长</th><th>最近</th><th>结论</th></tr>'+ee.map(function(e){var t=e[0],s=e[1];var ad=s.deltas.length>0?(s.deltas.reduce(function(a,b){return a+b;},0)/s.deltas.length).toFixed(1):'-';var adur=s.durations.length>0?Math.round(s.durations.reduce(function(a,b){return a+b;},0)/s.durations.length):'-';var tag=s.deltas.length===0?'<span class="tag-orange">数据待积累</span>':+ad<=-1.5?'<span class="tag-green">🟢 降糖明显</span>':+ad<=-0.5?'<span class="tag-orange">🟡 有效果</span>':'<span class="tag-orange">效果待观察</span>';return '<tr><td style="text-align:left;font-weight:700;">🏃 '+t+'</td><td>'+s.count+'</td><td style="color:'+(+ad<0?'var(--safe)':'var(--muted)')+';font-weight:700;">'+(ad!=='-'?((+ad<=0?'':'+')+ad):'-')+'</td><td>'+adur+'min</td><td style="font-size:0.7em;">'+s.lastDate+'</td><td>'+tag+'</td></tr>';}).join('')+'</table>';
+
+  // Meals
+  document.getElementById('myMeals').innerHTML = '<table><tr><th>餐次</th><th>总次数</th><th>炸糖率</th><th>平均营养分</th><th>平均恢复</th><th>评估</th></tr>'+['🥐 早餐','🍚 午餐','🌙 晚餐'].map(function(type){var s=mealStats[type];var sr=s.count>0?Math.round(s.spikes/s.count*100):0;var as=s.scores.length>0?Math.round(s.scores.reduce(function(a,b){return a+b;},0)/s.scores.length):'-';var ar=s.recoveries.length>0?Math.round(s.recoveries.reduce(function(a,b){return a+b;},0)/s.recoveries.length):'-';var tag=s.count===0?'-':sr<20&&as>=70?'<span class="tag-green">🟢 控制得好</span>':sr<40?'<span class="tag-orange">🟡 需要注意</span>':'<span class="tag-red">🔴 高炸糖率</span>';return '<tr><td style="text-align:left;font-weight:700;">'+type+'</td><td>'+s.count+'</td><td style="color:'+(sr>=40?'var(--danger)':sr>=20?'var(--warn)':'var(--safe)')+';font-weight:700;">'+sr+'%</td><td>'+as+'</td><td style="color:var(--info);">'+(ar!=='-'?ar+'min':'-')+'</td><td>'+tag+'</td></tr>';}).join('')+'</table>';
+
+  // Trend
+  document.getElementById('myTrend').innerHTML = '<table><tr><th>日期</th><th>空腹</th><th>三餐</th><th>炸糖</th><th>营养分</th><th>零食</th><th>运动</th></tr>'+recent.map(function(dk){var day=data[dk]||{};var mc=(day.meals||[]).length;var sc=(day.meals||[]).filter(function(m){return m.isSpike;}).length;var scores=(day.meals||[]).map(function(m){return m.evalScore||0;}).filter(function(s){return s>0;});var as=scores.length?Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length):'-';return '<tr><td>'+dk.slice(5)+' '+['日','一','二','三','四','五','六'][new Date(dk).getDay()]+'</td><td>'+(day.fasting||'-')+'</td><td>'+mc+'</td><td style="color:'+(sc>0?'var(--danger)':'var(--safe)')+';font-weight:700;">'+sc+'</td><td>'+as+'</td><td>'+(day.snacks||[]).length+'</td><td>'+(day.exercises||[]).length+'</td></tr>';}).join('')+'</table>';
+}
+
+// ==================== INIT ====================
+document.getElementById('mealTime').value = new Date().toTimeString().slice(0,5);
+document.getElementById('snackTime').value = new Date().toTimeString().slice(0,5);
+document.getElementById('exTime').value = new Date().toTimeString().slice(0,5);
+renderLogTab();
+updateSyncStatus();
+gistPull();
+window.addEventListener('beforeunload', saveDayData);
+
+// PWA service worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+
+// ==================== IMPORT / EXPORT ====================
+function exportData(){
+  var data = ld();
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '血糖数据_备份_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importData(input){
+  if(!confirm('导入会合并数据（相同日期的记录以导入文件为准）。确定继续？')){ input.value=''; return; }
+  var file = input.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      var importData = JSON.parse(e.target.result);
+      var currentData = ld();
+      var merged = {};
+      for(var key in currentData){ merged[key] = currentData[key]; }
+      for(var key in importData){ merged[key] = importData[key]; }
+      sv(merged);
+      alert('✅ 导入成功！共合并 ' + Object.keys(importData).length + ' 天数据');
+      renderAnalysisTab();
+      renderLogTab();
+    } catch(err){
+      alert('❌ 导入失败：文件格式不正确');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ==================== GIST CLOUD SYNC ====================
+var GIST_KEY = 'glucose_gist_config';
+
+function getGistConfig(){
+  try { return JSON.parse(localStorage.getItem(GIST_KEY)) || {}; } catch(e){ return {}; }
+}
+function saveGistConfig(cfg){ localStorage.setItem(GIST_KEY, JSON.stringify(cfg)); }
+
+function setupGist(){
+  var cfg = getGistConfig();
+  var msg = 'GitHub Gist 云同步设置：\n\n';
+  msg += '1. 打开 github.com → 头像 → Settings\n';
+  msg += '2. 左侧 Developer settings → Personal access tokens → Tokens (classic)\n';
+  msg += '3. Generate new token → 只勾选 gist → 生成\n';
+  msg += '4. 把 token 粘贴到下面\n\n';
+  msg += '如果没有 GitHub 账号，注册一个只需 1 分钟。\n';
+  msg += '数据存在你的私人 Gist 里，只有你能访问。';
+  alert(msg);
+
+  var token = prompt('请粘贴 GitHub Token：', cfg.token || '');
+  if(!token) return;
+  cfg.token = token.trim();
+
+  // If already have a gist ID, keep it; otherwise create one on first sync
+  if(!cfg.gistId){
+    var url = prompt('如果已有 Gist ID 请粘贴（首次设置留空即可）：', cfg.gistId || '');
+    if(url){
+      // Extract gist ID from URL or raw input
+      var m = url.match(/[a-f0-9]{32}/);
+      cfg.gistId = m ? m[0] : url.trim();
+    }
+  }
+  saveGistConfig(cfg);
+  updateSyncStatus();
+  alert('✅ 设置完成！现在可以点击「☁️ 云同步」上传数据。');
+}
+
+function updateSyncStatus(){
+  var div = document.getElementById('syncStatus');
+  var cfg = getGistConfig();
+  if(cfg.token && cfg.gistId){
+    div.innerHTML = '🟢 云同步已配置 | 上次：' + (cfg.lastSync || '未同步') + ' | <a href="https://gist.github.com/'+(cfg.gistId)+'" target="_blank" style="color:var(--info);">查看在线数据</a>';
+  } else if(cfg.token){
+    div.innerHTML = '🟡 已设置 Token，首次同步将自动创建 Gist';
+  } else {
+    div.innerHTML = '⚪ 未设置云同步，点击「🔑 设置」开始';
+  }
+}
+
+function gistSync(){
+  var cfg = getGistConfig();
+  if(!cfg.token){ alert('请先点击「🔑 设置」配置 GitHub Token'); return; }
+
+  var btn = document.getElementById('gistSyncBtn');
+  btn.textContent = '⏳ 同步中...';
+  btn.disabled = true;
+
+  var data = ld();
+  var body = {
+    description: '血糖监测数据',
+    public: false,
+    files: { 'glucose-data.json': { content: JSON.stringify(data) } }
+  };
+
+  var method, url;
+  if(cfg.gistId){
+    method = 'PATCH';
+    url = 'https://api.github.com/gists/' + cfg.gistId;
+  } else {
+    method = 'POST';
+    url = 'https://api.github.com/gists';
+  }
+
+  fetch(url, {
+    method: method,
+    headers: {
+      'Authorization': 'Bearer ' + cfg.token,
+      'Content-Type': 'application/json',
+      'Accept': 'application/vnd.github.v3+json'
+    },
+    body: JSON.stringify(body)
+  })
+  .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(function(result){
+    if(!cfg.gistId){
+      cfg.gistId = result.id;
+    }
+    cfg.lastSync = new Date().toLocaleString();
+    saveGistConfig(cfg);
+    btn.textContent = '☁️ 云同步';
+    btn.disabled = false;
+    updateSyncStatus();
+    alert('✅ 同步成功！\n\n现在换浏览器或换设备，点击「☁️ 云同步」就能恢复数据。');
+  })
+  .catch(function(err){
+    btn.textContent = '☁️ 云同步';
+    btn.disabled = false;
+    alert('❌ 同步失败：' + err.message + '\n\n请检查：\n1. Token 是否正确\n2. 网络是否通畅\n3. Token 是否勾选了 gist 权限');
+  });
+}
+
+// Auto-load from gist on startup
+function gistPull(){
+  var cfg = getGistConfig();
+  if(!cfg.token || !cfg.gistId) return;
+  fetch('https://api.github.com/gists/' + cfg.gistId, {
+    headers: { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github.v3+json' }
+  })
+  .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(function(gist){
+    var file = gist.files && gist.files['glucose-data.json'];
+    if(!file || !file.content) return;
+    var remote = JSON.parse(file.content);
+    var local = ld();
+    var remoteKeys = Object.keys(remote).length;
+    var localKeys = Object.keys(local).length;
+    if(remoteKeys > localKeys){
+      if(confirm('云端有 ' + remoteKeys + ' 天数据，本地有 ' + localKeys + ' 天。\n是否用云端数据覆盖本地？（选「取消」则合并）')){
+        sv(remote);
+      } else {
+        var merged = {};
+        for(var k in remote){ merged[k] = remote[k]; }
+        for(var k in local){ merged[k] = local[k]; }
+        sv(merged);
+      }
+      renderLogTab();
+      renderAnalysisTab();
+    }
+    cfg.lastSync = new Date().toLocaleString();
+    saveGistConfig(cfg);
+    updateSyncStatus();
+  })
+  .catch(function(){ /* silent fail - offline */ });
+}
+
+// ==================== AUTO-SAVE TO LOCAL FILE ====================
+var AUTO_FILE_KEY = 'glucose_autosave_handle';
+
+function setupAutoSave(){
+  // Check if File System Access API is available (Chrome 86+)
+  if(!window.showSaveFilePicker){
+    alert('当前浏览器不支持自动保存。\n\n请使用 Chrome 桌面版打开此工具。\n手机端请用「导出/导入」手动同步。');
+    return;
+  }
+
+  // Ask user to pick a file location
+  var opts = {
+    suggestedName: 'glucose-data.json',
+    types: [{ description: 'JSON 数据文件', accept: { 'application/json': ['.json'] } }],
+    startIn: 'documents'
+  };
+
+  window.showSaveFilePicker(opts).then(function(handle){
+    // Store the file handle reference (can't be serialized, kept in memory)
+    window._autoSaveHandle = handle;
+    // Try to persist permission
+    if(handle.queryPermission){
+      handle.queryPermission({mode:'readwrite'}).then(function(perm){
+        if(perm !== 'granted'){
+          handle.requestPermission({mode:'readwrite'});
+        }
+      });
+    }
+    // Do first save
+    autoSaveToFile();
+    document.getElementById('autoSaveBtn').textContent = '💾 已激活';
+    document.getElementById('autoSaveBtn').style.background = '#e4f0e8';
+    document.getElementById('autoSaveBtn').style.color = '#5a9e6f';
+    document.getElementById('autoSaveBtn').style.borderColor = '#5a9e6f';
+    var filename = handle.name || 'glucose-data.json';
+    document.getElementById('syncStatus').innerHTML = '🟢 自动保存已激活 → <b>' + filename + '</b>';
+  }).catch(function(err){
+    if(err.name !== 'AbortError'){
+      alert('设置失败：' + err.message + '\n\n请重试并选择一个 .json 文件。');
+    }
+  });
+}
+
+async function autoSaveToFile(){
+  var handle = window._autoSaveHandle;
+  if(!handle) return;
+  try {
+    var writable = await handle.createWritable();
+    var data = ld();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+    return true;
+  } catch(e){
+    // Permission lost or file moved - reset
+    window._autoSaveHandle = null;
+    document.getElementById('autoSaveBtn').textContent = '💾 自动保存';
+    document.getElementById('autoSaveBtn').style.background = '';
+    document.getElementById('autoSaveBtn').style.color = '';
+    document.getElementById('autoSaveBtn').style.borderColor = '';
+    updateSyncStatus();
+    return false;
+  }
+}
+
+// Override saveData to also auto-save to file
+var _origSaveData = sv;
+sv = function(d){
+  _origSaveData(d);
+  autoSaveToFile();
+};
+</script>
+</body>
+</html>
